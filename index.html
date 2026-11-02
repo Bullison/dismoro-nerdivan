@@ -94,7 +94,7 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
         <button id="v3d" aria-pressed="true">3D</button><button id="vfront" aria-pressed="false">Öndən</button>
         <button id="vside" aria-pressed="false">Yandan</button><button id="vhinge" aria-pressed="false">Petlə</button>
       </div>
-      <button class="btn" id="labels" aria-pressed="true">Adlar</button>
+      <button class="btn" id="labels" aria-pressed="false">Adlar</button>
       <button class="btn" id="xray" aria-pressed="false">Rentgen</button>
       <label class="slide" for="open">Bağlı <input id="open" type="range" min="0" max="100" value="100"> Açıq</label>
       <button class="btn" id="toggle">Bağla</button>
@@ -457,7 +457,7 @@ for (const id of ['v3d', 'vfront', 'vside', 'vhinge']) document.getElementById(i
 // adlar, rentgen, detala toxunanda məlumat
 if (labelsBtn) {
   const setLabels = on => { css2d.domElement.hidden = !on; labelsBtn.setAttribute('aria-pressed', String(on)); };
-  setLabels(true); labelsBtn.addEventListener('click', () => setLabels(css2d.domElement.hidden));
+  setLabels(false); labelsBtn.addEventListener('click', () => setLabels(css2d.domElement.hidden));
 }
 const xrayBtn = document.getElementById('xray');
 xrayBtn?.addEventListener('click', () => {
