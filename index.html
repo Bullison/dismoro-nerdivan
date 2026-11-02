@@ -301,11 +301,36 @@ const rubber = new THREE.MeshStandardMaterial({ color: 0x26282b, roughness: 0.9,
 const W = s => D.WB - (D.WB - D.WT) * s / D.L;
 const xAt = (u, grow = 0) => { const xo = W(u + D.FT) / 2; return [xo - D.RW - grow, xo + grow]; };
 
-// faska: hər təpədən qonşu tillər boyunca c mm geri çəkilmiş nöqtələrin qabarıq örtüyü — bütün tillər 45° faskalı olur
-function chamfered(verts, adj, c) {
-  const pts = [];
-  verts.forEach((v, i) => adj[i].forEach(j => pts.push(v.clone().add(verts[j].clone().sub(v).setLength(c)))));
-  return new ConvexGeometry(pts);
+// bevel: bütün tillər və künclər r mm yumrulanır (daxilə çəkilmiş cismin r radiuslu kürə ilə Minkovski cəmi).
+// Hər nöqtənin normalı onun kürə istiqamətidir — tillərdə yumşaq parıltı, düz üzlərdə dəqiq düz normal.
+const SPHERE = (() => {
+  const a = [], n = 90;
+  for (let i = 0; i < n; i++) {
+    const y = 1 - 2 * (i + 0.5) / n, rr = Math.sqrt(1 - y * y), t = i * 2.399963;
+    a.push(new THREE.Vector3(Math.cos(t) * rr, y, Math.sin(t) * rr));
+  }
+  return a;
+})();
+function chamfered(verts, adj, r) {
+  const base = new ConvexGeometry(verts), bn = base.attributes.normal, dirs = [...SPHERE];
+  for (let i = 0; i < bn.count; i += 3) dirs.push(new THREE.Vector3(bn.getX(i), bn.getY(i), bn.getZ(i)));
+  // qonşu üzlərin normallarının ortası — tillər boyunca hamar keçid üçün
+  const fn = []; for (let i = 0; i < bn.count; i += 3) fn.push(dirs[SPHERE.length + i / 3]);
+  for (let i = 0; i < fn.length; i++) for (let j = i + 1; j < fn.length; j++) {
+    const d = fn[i].dot(fn[j]);
+    if (d > -0.2 && d < 0.98) for (const t of [0.25, 0.5, 0.75]) dirs.push(fn[i].clone().lerp(fn[j], t).normalize());
+  }
+  const pts = [], nrm = new Map(), key = p => p.x.toFixed(3) + ',' + p.y.toFixed(3) + ',' + p.z.toFixed(3);
+  verts.forEach((v, i) => {
+    const inset = v.clone(); adj[i].forEach(j => inset.add(verts[j].clone().sub(v).setLength(r)));
+    for (const u of dirs) { const p = inset.clone().addScaledVector(u, r); pts.push(p); nrm.set(key(p), u); }
+  });
+  const g = new ConvexGeometry(pts), pos = g.attributes.position, n = g.attributes.normal;
+  for (let i = 0; i < pos.count; i++) {
+    const u = nrm.get(key(new THREE.Vector3(pos.getX(i), pos.getY(i), pos.getZ(i))));
+    if (u) n.setXYZ(i, u.x, u.y, u.z);
+  }
+  return g;
 }
 // lif istiqamətinə görə UV: yan üzlərdə u = lif boyunca, v = eninə; hər detala ayrıca sürüşmə
 let uvSeed = 5;
